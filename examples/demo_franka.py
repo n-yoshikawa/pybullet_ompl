@@ -29,9 +29,19 @@ class BoxDemo():
         robot = pb_ompl.PbOMPLRobot(robot_id)
         self.robot = robot
 
+        # Calculate limits
+        self.ll = []
+        self.ul = []
+        self.jr = []
+        self.robot.get_joint_bounds()
+        for bound in self.robot.joint_bounds:
+            self.ll.append(bound[0])
+            self.ul.append(bound[1])
+            self.jr.append(bound[1]-bound[0])
+
         # setup pb_ompl
-        self.pb_ompl_interface = pb_ompl.PbOMPL(self.robot, self.obstacles)
-        self.pb_ompl_interface.set_planner("PRM")
+        #self.pb_ompl_interface = pb_ompl.PbOMPL(self.robot, self.obstacles)
+        #self.pb_ompl_interface.set_planner("PRM")
 
         # add obstacles
         self.add_obstacles()
@@ -55,35 +65,33 @@ class BoxDemo():
         self.obstacles.append(box_id)
         return box_id
 
-    def demo(self):
-        start = [0,0,0,-1,0,1.0,0]
-        self.robot.set_state(start)
+    def inverse_kinematics(self, pos, orientation, hand_link=7):
+        state = p.calculateInverseKinematics(self.robot.id, hand_link, pos, orientation, lowerLimits=self.ll, upperLimits=self.ul, jointRanges=self.jr)
+        return list(state)
 
-        # Calculate limits
-        ll = []
-        ul = []
-        jr = []
-        for bound in self.robot.joint_bounds:
-            ll.append(bound[0])
-            ul.append(bound[1])
-            jr.append(bound[1]-bound[0])
-        print("upper limits:", ul)
-        print("lower limits:", ll)
+    def path(self, goal, start=None):
+        pb_ompl_interface = pb_ompl.PbOMPL(self.robot, self.obstacles)
+        pb_ompl_interface.set_planner("RRT")
 
-        hand_link = 7
-        goal_pos = [0.6, 0, 0.2]
-        goal_orn = p.getQuaternionFromEuler([math.pi, 0, 0])
-        print("goal_orn:", goal_orn)
-        goal_state = p.calculateInverseKinematics(self.robot.id, hand_link, goal_pos, goal_orn, lowerLimits=ll, upperLimits=ul, jointRanges=jr)
-        goal_state = list(goal_state)
-        print("goal_state:", goal_state)
-        res, path = self.pb_ompl_interface.plan(goal_state)
+        #print("robot state:", self.robot.state)
+        #for i in self.robot.joint_idx:
+        #    print(f"getJointState({i}):", p.getJointState(self.robot.id, i))
+
+        if start is None:
+            start = self.robot.get_cur_state()
+        res, path = pb_ompl_interface.plan_start_goal(start, goal)
         if res:
-            x = input("Execute?")
-            self.pb_ompl_interface.execute(path)
-            x = input("Exit?")
+            pb_ompl_interface.execute(path)
         return res, path
 
 if __name__ == '__main__':
     env = BoxDemo()
-    env.demo()
+    start = [0,0,0,-1,0,1.0,0]
+    goal_pos = [0.5, -0.3, 0.3]
+    goal_orn = p.getQuaternionFromEuler([math.pi, 1.4, 0])
+    goal = env.inverse_kinematics(goal_pos, goal_orn)
+    env.path(goal, start)
+    goal2_pos = [0.5, 0.3, 0.3]
+    goal2 = env.inverse_kinematics(goal2_pos, goal_orn)
+    env.path(goal2)
+    env.path(start)
