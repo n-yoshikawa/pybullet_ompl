@@ -54,6 +54,10 @@ class PbOMPLRobot():
         Get joint bounds.
         By default, read from pybullet
         '''
+        # If already called before, return current value
+        if self.joint_bounds:
+            print("Joint bounds: {}".format(self.joint_bounds))
+            return self.joint_bounds
         for i, joint_id in enumerate(self.joint_idx):
             joint_info = p.getJointInfo(self.id, joint_id)
             low = joint_info[8] # low bounds
@@ -114,7 +118,7 @@ class PbStateSpace(ob.RealVectorStateSpace):
         self.state_sampler = state_sampler
 
 class PbOMPL():
-    def __init__(self, robot, obstacles = []) -> None:
+    def __init__(self, robot, obstacles = None) -> None:
         '''
         Args
             robot: A PbOMPLRobot instance.
@@ -122,6 +126,8 @@ class PbOMPL():
         '''
         self.robot = robot
         self.robot_id = robot.id
+        if obstacles is None:
+            obstacles = []
         self.obstacles = obstacles
         print(self.obstacles)
 
