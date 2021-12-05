@@ -1,6 +1,8 @@
 # pybullet_ompl
 This repo provides interface to use OMPL for motion planning inside PyBullet. It uses OMPL python bindings.
 
+Original repo: [lyf44/pybullet_ompl](https://github.com/lyf44/pybullet_ompl)
+
 ![example](/images/example.gif)
 
 # Environment
