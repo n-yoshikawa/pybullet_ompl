@@ -69,7 +69,7 @@ class BoxDemo():
         state = p.calculateInverseKinematics(self.robot.id, hand_link, pos, orientation, lowerLimits=self.ll, upperLimits=self.ul, jointRanges=self.jr)
         return list(state)
 
-    def path(self, goal, start=None):
+    def calc_path(self, start, goal):
         pb_ompl_interface = pb_ompl.PbOMPL(self.robot, self.obstacles)
         pb_ompl_interface.set_planner("RRT")
 
@@ -80,9 +80,13 @@ class BoxDemo():
         if start is None:
             start = self.robot.get_cur_state()
         res, path = pb_ompl_interface.plan_start_goal(start, goal)
-        if res:
-            pb_ompl_interface.execute(path)
+        #if res:
+        #    pb_ompl_interface.execute(path)
         return res, path
+
+    def run_path(self, path):
+        pb_ompl_interface = pb_ompl.PbOMPL(self.robot, self.obstacles)
+        pb_ompl_interface.execute(path)
 
 if __name__ == '__main__':
     env = BoxDemo()
@@ -90,8 +94,13 @@ if __name__ == '__main__':
     goal_pos = [0.5, -0.3, 0.3]
     goal_orn = p.getQuaternionFromEuler([math.pi, 1.4, 0])
     goal = env.inverse_kinematics(goal_pos, goal_orn)
-    env.path(goal, start)
+    res, path1 = env.calc_path(start, goal)
     goal2_pos = [0.5, 0.3, 0.3]
     goal2 = env.inverse_kinematics(goal2_pos, goal_orn)
-    env.path(goal2)
-    env.path(start)
+    res, path2 = env.calc_path(goal, goal2)
+    res, path3 = env.calc_path(goal2, start)
+    x = input("start?")
+    env.run_path(path1)
+    env.run_path(path2)
+    env.run_path(path3)
+    x = input("exit?")
